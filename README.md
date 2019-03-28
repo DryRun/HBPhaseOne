@@ -13,10 +13,11 @@ git fetch DryRun
 git merge DryRun:ngHB
 
 # Pull analysis skeleton
+cd $CMSSW_BASE/src
 git clone ssh://git@github.com/DryRun/HBPhaseOne Analysis/HBPhaseOne
 
 scram b -j8
 
-cd Analysis/HBPhaseOne/analysis
+cd $CMSSW_BASE/src/Analysis/HBPhaseOne/analysis
 cmsRun local_run.py run=328619 processEvents=1000
 ```
