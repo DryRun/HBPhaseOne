@@ -37,6 +37,15 @@ HBAnalysis::~HBAnalysis() {
 
 void HBAnalysis::beginJob() {
 	_first = true;
+	_events_processed = 0;
+
+	_histograms["ADCvsTS"] = _fs->make<TH2F>("ADCvsTS", "ADCvsTS", 9, -0.5, 7.5, 256, -0.5, 255.5);
+	((TH2F*)(_histograms["ADCvsTS"]))->GetXaxis()->SetTitle("TS");
+	((TH2F*)(_histograms["ADCvsTS"]))->GetYaxis()->SetTitle("ADC");
+
+	_histograms["MeanSumQ"] = _fs->make<TH2F>("MeanSumQ", "MeanSumQ", 35, -17.5, 17.5, 74, -1.5, 72.5);
+	((TH2F*)(_histograms["MeanSumQ"]))->GetXaxis()->SetTitle("IEta");
+	((TH2F*)(_histograms["MeanSumQ"]))->GetYaxis()->SetTitle("IPhi");
 }
 
 void HBAnalysis::analyze(const edm::Event& event, const edm::EventSetup& es) {
@@ -50,28 +59,43 @@ void HBAnalysis::analyze(const edm::Event& event, const edm::EventSetup& es) {
 	edm::ESHandle<HcalDbService> dbs;
 	es.get<HcalDbRecord>().get(dbs);
 
-	if (_first) {
-		_first = false;
-		_emap = dbs->getHcalMapping();	
-		_ehashmap.initialize(_emap, hcaldqm::electronicsmap::fD2EHashMap);
-		_ehashmap.print();
-	}
+	//if (_first) {
+	//	_first = false;
+	//	
+	//	// Print the emap to verify if ngHB channels are present
+	//	_emap = dbs->getHcalMapping();	
+	//	_ehashmap.initialize(_emap, hcaldqm::electronicsmap::fD2EHashMap);
+	//	_ehashmap.print();
+	//}
 
 	for (QIE11DigiCollection::const_iterator it = cQIE11->begin(); it != cQIE11->end(); ++it) {
 		const QIE11DataFrame digi = static_cast<const QIE11DataFrame>(*it);
 		HcalDetId const& did = digi.detid();
-		//if ((did.subdet() != HcalBarrel)) {
-		//	continue;
-		//}
+		//std::cout << "[debug] Digi " << did << std::endl;
+		if ((did.subdet() != HcalBarrel)) {
+			continue;
+		}
+
 		double sumq = 0.;
 		for (int i=0; i<digi.samples(); i++) {
 			sumq += _adc2fC[digi[i].adc()];
+			//std::cout << "[debug] \t" << i << " => " << _adc2fC[digi[i].adc()] << std::endl;
 		}
-		std::cout << "[debug] Digi " << did << " / sumQ = " << sumq << std::endl;
+
+		((TH2F*)_histograms["ADCvsTS"])->Fill(did.ieta(), did.iphi(), sumq);
+
+		if (sumq > 100. * digi.samples()) {
+			for (int ts = 0; ts < digi.samples(); ++ts) {
+				((TH2F*)_histograms["ADCvsTS"])->Fill(ts, digi[ts].adc());
+			}
+		}
 	}
+
+	_events_processed += 1;
 }
 
 void HBAnalysis::endJob() {
+	((TH2F*)_histograms["ADCvsTS"])->Scale(1. / _events_processed);
 }
 
 

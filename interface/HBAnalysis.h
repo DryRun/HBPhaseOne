@@ -57,6 +57,9 @@ public:
 	hcaldqm::electronicsmap::ElectronicsMap _ehashmap;
 
 	bool _first;
+
+	std::map<TString, TH1*> _histograms;
+	uint32_t _events_processed;
 };
 
 #endif
