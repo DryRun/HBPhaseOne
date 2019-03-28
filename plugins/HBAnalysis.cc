@@ -43,9 +43,13 @@ void HBAnalysis::beginJob() {
 	((TH2F*)(_histograms["ADCvsTS"]))->GetXaxis()->SetTitle("TS");
 	((TH2F*)(_histograms["ADCvsTS"]))->GetYaxis()->SetTitle("ADC");
 
-	_histograms["MeanSumQ"] = _fs->make<TH2F>("MeanSumQ", "MeanSumQ", 35, -17.5, 17.5, 74, -1.5, 72.5);
-	((TH2F*)(_histograms["MeanSumQ"]))->GetXaxis()->SetTitle("IEta");
-	((TH2F*)(_histograms["MeanSumQ"]))->GetYaxis()->SetTitle("IPhi");
+	for (int depth = 1; depth <= 4; ++depth) {
+		TString name = "MeanSumQ_depth";
+		name += depth;
+		_histograms[name] = _fs->make<TH2F>(name, name, 35, -17.5, 17.5, 74, -1.5, 72.5);
+		((TH2F*)(_histograms[name]))->GetXaxis()->SetTitle("IEta");
+		((TH2F*)(_histograms[name]))->GetYaxis()->SetTitle("IPhi");
+	}
 }
 
 void HBAnalysis::analyze(const edm::Event& event, const edm::EventSetup& es) {
@@ -82,7 +86,9 @@ void HBAnalysis::analyze(const edm::Event& event, const edm::EventSetup& es) {
 			//std::cout << "[debug] \t" << i << " => " << _adc2fC[digi[i].adc()] << std::endl;
 		}
 
-		((TH2F*)_histograms["ADCvsTS"])->Fill(did.ieta(), did.iphi(), sumq);
+		TString hname = "MeanSumQ";
+		hname += did.depth();
+		((TH2F*)_histograms[hname])->Fill(did.ieta(), did.iphi(), sumq);
 
 		if (sumq > 100. * digi.samples()) {
 			for (int ts = 0; ts < digi.samples(); ++ts) {
@@ -95,7 +101,7 @@ void HBAnalysis::analyze(const edm::Event& event, const edm::EventSetup& es) {
 }
 
 void HBAnalysis::endJob() {
-	((TH2F*)_histograms["ADCvsTS"])->Scale(1. / _events_processed);
+	((TH2F*)_histograms["MeanSumQ"])->Scale(1. / _events_processed);
 }
 
 
